@@ -1,0 +1,3 @@
+/home/antoni/dev/ray-tracing/cmake-build-debug/CMakeFiles/ray_tracing.dir
+/home/antoni/dev/ray-tracing/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/antoni/dev/ray-tracing/cmake-build-debug/CMakeFiles/rebuild_cache.dir
