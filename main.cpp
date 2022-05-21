@@ -4,13 +4,14 @@
 #include "colour.h"
 #include "ray.h"
 
+bool  hit_sphere(const point3& center, double radius, const ray& ray);
 colour ray_colour(const ray& r);
 
 int main() {
 
     //Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 400;
+    const int image_width = 480;
     const int image_height = static_cast<int>(image_width/aspect_ratio);
 
     //Camera
@@ -31,7 +32,7 @@ int main() {
         std::cerr  << "\r Rows Remaining: " << j << " "<< std::flush;
         for (int i = 0; i < image_width; ++i){
             auto u = double(i) /(image_width-1);
-            auto v = double(i) / (image_height-1);
+            auto v = double(j) / (image_height-1);
             ray r(origin,lower_left + u*horizontal + v*vertical -origin);
             colour pixel_colour = ray_colour(r);
             write_colour(std::cout, pixel_colour);
@@ -40,8 +41,21 @@ int main() {
         std::cerr << "\n Render Complete";
 }
 
+// Determines if a ray would hit the sphere
+bool  hit_sphere(const point3& center, double radius, const ray& ray){
+    vec3 oc = ray.origin() - center;
+    auto a = dot(ray.direction(), ray.direction());
+    auto b = 2.0 * dot(oc, ray.direction());
+    auto c = dot(oc, oc) - radius*radius;
+    // the discriminant whoa
+    auto discriminant = b*b - 4*a*c;
+    return (discriminant > 0);
+}
 
 colour ray_colour(const ray& r){
+    if (hit_sphere(point3(0,0,-1), 0.5, r)){
+        return colour(0,1,1);
+    }
     vec3 unit_direction = unit_vector(r.direction());
     auto t = 0.5 *(unit_direction.y() + 1.0);
     return (1.0-t)*colour(1.0,1.0,1.0) +t*colour(0.5,0.7,1.0);
