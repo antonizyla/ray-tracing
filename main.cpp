@@ -1,11 +1,12 @@
 #include <iostream>
 
-#include "vec3.h"
+#include "rt_header.h"
 #include "colour.h"
-#include "ray.h"
+#include "hittable_list.h"
+#include "sphere.h"
 
-bool  hit_sphere(const point3& center, double radius, const ray& ray);
-colour ray_colour(const ray& r);
+double  hit_sphere(const point3& center, double radius, const ray& ray);
+colour ray_colour(const ray& r, const hittable& world);
 
 int main() {
 
@@ -13,6 +14,12 @@ int main() {
     const auto aspect_ratio = 16.0 / 9.0;
     const int image_width = 480;
     const int image_height = static_cast<int>(image_width/aspect_ratio);
+
+    //World
+    hittable_list world;
+    world.add(std::make_shared<sphere>(point3(0,0,-1), 0.45));
+    world.add(std::make_shared<sphere>(point3(0,-100.5,-1),100));
+    //world.add(std::make_shared<sphere>(point3(0,1,1),2));
 
     //Camera
     auto viewport_height = 2.0;
@@ -34,29 +41,36 @@ int main() {
             auto u = double(i) /(image_width-1);
             auto v = double(j) / (image_height-1);
             ray r(origin,lower_left + u*horizontal + v*vertical -origin);
-            colour pixel_colour = ray_colour(r);
+            colour pixel_colour = ray_colour(r,world);
             write_colour(std::cout, pixel_colour);
             }
         }
-        std::cerr << "\n Render Complete";
+    std::cerr << "\n Render Complete";
 }
 
-// Determines if a ray would hit the sphere
-bool  hit_sphere(const point3& center, double radius, const ray& ray){
+// Determines if a ray would hit the sphere using the discriminant
+// either return -1 if not hit or the positive R where it did hit
+double  hit_sphere(const point3& center, double radius, const ray& ray){
     vec3 oc = ray.origin() - center;
-    auto a = dot(ray.direction(), ray.direction());
-    auto b = 2.0 * dot(oc, ray.direction());
-    auto c = dot(oc, oc) - radius*radius;
+    auto a = ray.direction().length_squared();
+    auto half_b = dot(oc, ray.direction());
+    auto c = oc.length_squared() -radius*radius;
     // the discriminant whoa
-    auto discriminant = b*b - 4*a*c;
-    return (discriminant > 0);
+    auto discriminant = half_b*half_b - a*c;
+    if (discriminant < 0){
+        return -1.0;
+    }else  {
+        return (-half_b - sqrt(discriminant) / a);
+    }
+
 }
 
-colour ray_colour(const ray& r){
-    if (hit_sphere(point3(0,0,-1), 0.5, r)){
-        return colour(0,1,1);
+colour ray_colour(const ray& r, const hittable& world){
+    hit_record rec;
+    if(world.hit(r,0,infty, rec)){
+        return 0.5 * (rec.normal + colour(1,1,1));
     }
     vec3 unit_direction = unit_vector(r.direction());
-    auto t = 0.5 *(unit_direction.y() + 1.0);
-    return (1.0-t)*colour(1.0,1.0,1.0) +t*colour(0.5,0.7,1.0);
+    auto t = 0.5 * (unit_direction.y() +1.0);
+    return (1.0-t)*colour(1.0,1.0,1.0) + t*colour(0.5,0.7,1.0);
 }
