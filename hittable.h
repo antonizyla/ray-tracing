@@ -5,12 +5,14 @@
 #ifndef RAY_TRACING_HITTABLE_H
 #define RAY_TRACING_HITTABLE_H
 
-#include "vec3.h"
-#include "ray.h"
+#include "rt_header.h"
+
+class material;
 
 struct  hit_record {
     point3 p;
     vec3 normal;
+    std::shared_ptr<material> mat_ptr;
     double t;
     bool front_face;
 
@@ -25,5 +27,6 @@ class hittable{
     public :
         virtual bool hit(const ray& r, double t_min, double t_max, hit_record& rec) const = 0;
 };
+
 
 #endif //RAY_TRACING_HITTABLE_H
