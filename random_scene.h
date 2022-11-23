@@ -11,12 +11,12 @@
 #include "sphere.h"
 #include "camera.h"
 #include "material.h"
-
+#include "moving_sphere.h"
 
 hittable_list random_scene() {
     hittable_list world;
 
-    auto ground_material = std::make_shared<lambertian>(colour(0.5, 0.5, 0.5));
+    std::shared_ptr<lambertian> ground_material = std::make_shared<lambertian>(colour(0.5, 0.5, 0.5));
     world.add(std::make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
 
     for (int a = -11; a < 11; a++) {
@@ -31,7 +31,8 @@ hittable_list random_scene() {
                     // diffuse
                     auto albedo = colour::random() * colour::random();
                     sphere_material = std::make_shared<lambertian>(albedo);
-                    world.add(std::make_shared<sphere>(center, 0.2, sphere_material));
+                    auto center2 = center + vec3(0, random_double(0, 0.5), 0);
+                    world.add(std::make_shared<moving_sphere>(center, center2, 0.0, 1.0, 0.2, sphere_material));
                 } else if (choose_mat < 0.95) {
                     // metal
                     auto albedo = colour::random(0.5, 1);

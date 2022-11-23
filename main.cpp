@@ -18,7 +18,7 @@ colour ray_colour(const ray &r, const hittable &world, int depth);
 
 void trace_rays(int i, int j, const int samples, const int image_width, const int image_height, const camera &cam,
                 const hittable_list &world,
-                const int max_depth, std::string &pixel);
+                const int max_depth, std::string &pixel, int &active_threads);
 
 
 int main(int argc, char **argv) {
@@ -31,11 +31,12 @@ int main(int argc, char **argv) {
     }
 
     //Image
-    const auto aspect_ratio = 1.5;
-    const int image_width = 600;
+    const double aspect_ratio = 3.0 / 2.0;
+    const int image_width = 200;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples = 500;
-    const int max_depth = 300;
+    const int samples = 20;
+    const int max_depth = 10;
+    int active_threads = 0;
 
     //World
     const hittable_list world = random_scene();
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
 //  auto dist_to_focus = (lookfrom-lookat).length();
     auto aperture = 0.1;
 
-    const camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus);
+    const camera cam(lookfrom, lookat, vup, 20, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
     // Files
     std::ofstream file("../Image.ppm");
@@ -65,9 +66,10 @@ int main(int argc, char **argv) {
         for (int j = 0; j < image_height; j++) {
             image[i][j].resize(12);
             std::thread worker(trace_rays, i, j, samples, image_width, image_height, std::ref(cam), std::ref(world),
-                             max_depth, std::ref(image[i][j]));
+                               max_depth, std::ref(image[i][j]), std::ref(active_threads));
             if (multithreaded) {
                 worker.detach();
+                active_threads++;
             } else {
                 worker.join();
             }
@@ -75,7 +77,10 @@ int main(int argc, char **argv) {
         std::cerr << "\r Columns Remaining: " << image_width - i << "\n";
     }
 
-    std::this_thread::sleep_for (std::chrono::seconds(3));
+    if (multithreaded) { // has to wait for all threads to finish
+        std::cerr << "Waiting for all threads to finish (3s)" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    }
 
     // ppm header
     oss << "P3\n" << image_width << " " << image_height << "\n255\n";
@@ -130,7 +135,7 @@ colour ray_colour(const ray &r, const hittable &world, int depth) {
 }
 
 void trace_rays(int i, int j, const int samples, const int image_width, const int image_height, const camera &cam,
-                const hittable_list &world, const int max_depth, std::string &pixel) {
+                const hittable_list &world, const int max_depth, std::string &pixel, int &active_threads) {
     colour pixel_colour(0, 0, 0);
     for (int s = 0; s < samples; ++s) {
         auto u = (i + random_double()) / (image_width - 1);
@@ -139,4 +144,5 @@ void trace_rays(int i, int j, const int samples, const int image_width, const in
         pixel_colour += ray_colour(r, world, max_depth);
     }
     pixel = write_colour_str(pixel_colour, samples);
+    active_threads--;
 }
